@@ -71,8 +71,11 @@
     </div>
 
     <script>
-        const CLAUDE_API_KEY = "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";
-
+        let CLAUDE_API_KEY = localStorage.getItem('claude_key');
+        if (!CLAUDE_API_KEY) {
+            CLAUDE_API_KEY = prompt("Enter your Claude API key:");
+            localStorage.setItem('claude_key', CLAUDE_API_KEY);
+            }
         const video = document.getElementById('video');
         const status = document.getElementById('status');
         const responseBox = document.getElementById('response-box');
