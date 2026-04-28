@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ForestFeast 🍄</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background: #1a1a1a; color: white; font-family: sans-serif; }
+        
+        #camera-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+        }
+        
+        #video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        #ui-overlay {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 20px;
+            background: linear-gradient(transparent, rgba(0,0,0,0.8));
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+        }
+
+        #status {
+            font-size: 14px;
+            color: #ccc;
+        }
+
+        #ask-btn {
+            background: #2d6a2d;
+            color: white;
+            border: none;
+            border-radius: 50px;
+            padding: 16px 40px;
+            font-size: 18px;
+            cursor: pointer;
+            width: 80%;
+        }
+
+        #response-box {
+            background: rgba(0,0,0,0.7);
+            border-radius: 12px;
+            padding: 16px;
+            font-size: 14px;
+            line-height: 1.5;
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+    <div id="camera-container">
+        <video id="video" autoplay playsinline></video>
+        
+        <div id="ui-overlay">
+            <div id="status">Point camera at a mushroom or plant</div>
+            <div id="response-box">Tap the button and ask about what you see 🌲</div>
+            <button id="ask-btn">🎤 Tap to Ask</button>
+        </div>
+    </div>
+
+    <script>
+        const CLAUDE_API_KEY = "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";
+
+        const video = document.getElementById('video');
+        const status = document.getElementById('status');
+        const responseBox = document.getElementById('response-box');
+        const askBtn = document.getElementById('ask-btn');
+
+        async function startCamera() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { facingMode: 'environment' },
+                    audio: false 
+                });
+                video.srcObject = stream;
+                status.textContent = "Point camera at a mushroom or plant";
+            } catch (err) {
+                status.textContent = "Camera error: " + err.message;
+            }
+        }
+
+        function captureFrame() {
+            const canvas = document.createElement('canvas');
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            canvas.getContext('2d').drawImage(video, 0, 0);
+            return canvas.toDataURL('image/jpeg').split(',')[1];
+        }
+
+        async function askClaude(question, imageBase64) {
+            status.textContent = "Thinking...";
+            responseBox.textContent = "Analyzing...";
+
+            const prompt = "You are ForestFeast, a helpful and cautious foraging assistant inspired by Swedish nature traditions and Allemansrätten. A beginner forager is pointing their camera at something in the forest and asking: " + question + ". Analyze the image and answer helpfully. If you can identify a mushroom or plant, say what it likely is, say if it appears edible or not, and give one key identifying feature you can see. If the image is unclear, ask them to move closer or adjust the angle. Keep your response under 100 words. ALWAYS end with: ⚠️ Always verify with an expert before eating anything you find.";
+
+            try {
+                const response = await fetch(
+                    "https://api.anthropic.com/v1/messages",
+                    {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'x-api-key': CLAUDE_API_KEY,
+                            'anthropic-version': '2023-06-01',
+                            'anthropic-dangerous-direct-browser-access': 'true'
+                        },
+                        body: JSON.stringify({
+                            model: "claude-sonnet-4-6",
+                            max_tokens: 300,
+                            messages: [{
+                                role: "user",
+                                content: [
+                                    {
+                                        type: "image",
+                                        source: {
+                                            type: "base64",
+                                            media_type: "image/jpeg",
+                                            data: imageBase64
+                                        }
+                                    },
+                                    {
+                                        type: "text",
+                                        text: prompt
+                                    }
+                                ]
+                            }]
+                        })
+                    }
+                );
+
+                const data = await response.json();
+                const reply = data.content[0].text;
+                responseBox.textContent = reply;
+                status.textContent = "Point camera at a mushroom or plant";
+
+            } catch (err) {
+                responseBox.textContent = "Error: " + err.message;
+                status.textContent = "Something went wrong, try again";
+            }
+        }
+
+        function startListening() {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            
+            if (!SpeechRecognition) {
+                status.textContent = "Voice not supported, analyzing image...";
+                const image = captureFrame();
+                askClaude("Is this safe to eat? What is it?", image);
+                return;
+            }
+
+            const recognition = new SpeechRecognition();
+            recognition.lang = 'en-US';
+            recognition.interimResults = false;
+
+            recognition.onstart = function() {
+                status.textContent = "🎤 Listening...";
+                askBtn.textContent = "🎤 Listening...";
+                askBtn.disabled = true;
+            };
+
+            recognition.onresult = function(event) {
+                const question = event.results[0][0].transcript;
+                status.textContent = "You asked: " + question;
+                askBtn.textContent = "🎤 Tap to Ask";
+                askBtn.disabled = false;
+                const image = captureFrame();
+                askClaude(question, image);
+            };
+
+            recognition.onerror = function(event) {
+                status.textContent = "Couldn't hear you - try again";
+                askBtn.textContent = "🎤 Tap to Ask";
+                askBtn.disabled = false;
+            };
+
+            recognition.onend = function() {
+                askBtn.textContent = "🎤 Tap to Ask";
+                askBtn.disabled = false;
+            };
+
+            recognition.start();
+        }
+
+        askBtn.addEventListener('click', startListening);
+        startCamera();
+    </script>
+</body>
+</html>
