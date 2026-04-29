@@ -279,13 +279,20 @@ Keep responses under 80 words.`;
             recognition.onstart = function() {
                 askBtn.textContent = "🎤 Listening...";
                 askBtn.disabled = true;
-                
+            };
+
+            recognition.onspeechstart = function() {
+                // Speech detected - clear any pending timeout
+                clearTimeout(silenceTimer);
+            };
+
+            recognition.onspeechend = function() {
+                // Speech stopped - give it 2 seconds to process
                 silenceTimer = setTimeout(function() {
-                    recognition.stop();
                     responseBox.textContent = "Couldn't hear you — type below instead 👇";
                     askBtn.textContent = "🎤 Tap to Ask";
                     askBtn.disabled = false;
-                }, 3000);
+                }, 2000);
             };
 
             recognition.onresult = function(event) {
