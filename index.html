@@ -31,6 +31,7 @@
             flex-direction: column;
             align-items: center;
             gap: 12px;
+            overflow: hidden;
         }
 
         #status {
@@ -56,6 +57,16 @@
             font-size: 14px;
             line-height: 1.5;
             width: 100%;
+        }
+        #text-fallback input:focus {
+            outline: none;
+        }
+
+        body {
+            overflow: hidden;
+            position: fixed;
+            width: 100%;
+            height: 100%;
         }
     </style>
 </head>
