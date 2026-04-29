@@ -99,7 +99,7 @@
 
         #text-input:focus {
             outline: none;
-            background: rgba(255,255,255,0.25);
+            background: rgb(255, 255, 255);
         }
 
         #send-btn {
@@ -135,8 +135,8 @@
     </div>
 
     <div id="ui-overlay">
-        <div id="status">Point camera at a mushroom or plant</div>
-        <div id="response-box">Tap the button and ask about what you see 🌲</div>
+        <!-- <div id="status">...</div> -->
+        <div id="response-box">Point with the camera, press the button and ask about what you see 🌲</div>
         <button id="ask-btn">🎤 Tap to Ask</button>
     </div>
 
@@ -183,8 +183,7 @@
         }
 
         async function askClaude(question, imageBase64) {
-            status.textContent = "Thinking...";
-            responseBox.textContent = "Analyzing...";
+            responseBox.textContent = "Thinking...";
             askBtn.disabled = true;
 
             const systemPrompt = `You are ForestFeast, a cautious and knowledgeable foraging assistant inspired by Swedish nature traditions and Allemansrätten.
@@ -254,11 +253,11 @@ Keep responses under 80 words.`;
                 });
 
                 responseBox.textContent = reply;
-                status.textContent = "Point camera at a mushroom or plant";
+                // status.textContent = "Point camera at a mushroom or plant";
 
             } catch (err) {
                 responseBox.textContent = "Error: " + err.message;
-                status.textContent = "Something went wrong, try again";
+                responseBox.textContent = "Something went wrong, try again";
             }
 
             askBtn.disabled = false;
@@ -268,7 +267,7 @@ Keep responses under 80 words.`;
             const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
             
             if (!SpeechRecognition) {
-                status.textContent = "Voice not supported, use text below";
+                responseBox.textContent = "Voice not supported, use text below";
                 return;
             }
 
@@ -277,7 +276,6 @@ Keep responses under 80 words.`;
             recognition.interimResults = false;
 
             recognition.onstart = function() {
-                status.textContent = "🎤 Listening...";
                 askBtn.textContent = "🎤 Listening...";
                 askBtn.disabled = true;
             };
@@ -291,7 +289,7 @@ Keep responses under 80 words.`;
             };
 
             recognition.onerror = function(event) {
-                status.textContent = "Couldn't hear you — type below instead";
+                responseBox.textContent = "Couldn't hear you — type below instead";
                 askBtn.textContent = "🎤 Tap to Ask";
                 askBtn.disabled = false;
             };
@@ -301,13 +299,13 @@ Keep responses under 80 words.`;
             };
 
             recognition.onstart = function() {
-                status.textContent = "🎤 Listening...";
+                // status.textContent = "🎤 Listening...";
                 askBtn.textContent = "🎤 Listening...";
                 askBtn.disabled = true;
                 
                 silenceTimer = setTimeout(function() {
                     recognition.stop();
-                    status.textContent = "Couldn't hear you — type below instead";
+                    responseBox.textContent = "Couldn't hear you — type below instead";
                     askBtn.textContent = "🎤 Tap to Ask";
                     askBtn.disabled = false;
                 }, 8000);
