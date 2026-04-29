@@ -22,7 +22,7 @@
         
         #ui-overlay {
             position: absolute;
-            bottom: 15px;
+            bottom: 5px;
             left: 0;
             right: 0;
             padding: 20px;
@@ -67,6 +67,11 @@
             <div id="status">Point camera at a mushroom or plant</div>
             <div id="response-box">Tap the button and ask about what you see 🌲</div>
             <button id="ask-btn">🎤 Tap to Ask</button>
+            <div id="text-fallback" style="width:80%; display:flex; gap:8px; margin-top:4px;">
+                <input id="text-input" type="text" placeholder="Or type your question..." 
+                    style="flex:1; padding:10px; border-radius:20px; border:none; background:rgba(255,255,255,0.2); color:white; font-size:14px;">
+                <button id="send-btn" style="background:#2d6a2d; color:white; border:none; border-radius:20px; padding:10px 16px; cursor:pointer;">Send</button>
+            </div>
         </div>
     </div>
 
@@ -232,6 +237,16 @@ Keep responses under 80 words.`;
     }
 
     askBtn.addEventListener('click', startListening);
+    document.getElementById('send-btn').addEventListener('click', function() {
+    const input = document.getElementById('text-input');
+    const question = input.value.trim();
+    if (question) {
+        status.textContent = "You asked: " + question;
+        input.value = '';
+        const image = captureFrame();
+        askClaude(question, image);
+        }
+    });
     startCamera();
 </script>
 </body>
