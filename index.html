@@ -47,7 +47,7 @@
 
         #status {
             font-size: 14px;
-            color: #ccc;
+            color: white;
         }
 
         #response-box {
@@ -135,7 +135,7 @@
     </div>
 
     <div id="ui-overlay">
-        <div id="status">...</div>
+        <div id="status"></div>
         <div id="response-box">Point with the camera, press the button and ask about what you see 🌲</div>
         <button id="ask-btn">🎤 Tap to Ask</button>
     </div>
@@ -291,6 +291,7 @@ Keep responses under 80 words.`;
             recognition.onresult = function(event) {
                 clearTimeout(silenceTimer);
                 const question = event.results[0][0].transcript;
+                status.textContent = "You asked: " + question;
                 askBtn.textContent = "🎤 Tap to Ask";
                 const image = captureFrame();
                 askClaude(question, image);
