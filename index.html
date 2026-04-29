@@ -160,6 +160,7 @@
         const sendBtn = document.getElementById('send-btn');
 
         let conversationHistory = [];
+        let silenceTimer;
 
         async function startCamera() {
             try {
@@ -332,6 +333,25 @@ Keep responses under 80 words.`;
                 bottomBar.style.bottom = (window.innerHeight - viewportHeight) + 'px';
             });
         }
+
+        recognition.onstart = function() {
+            status.textContent = "🎤 Listening...";
+            askBtn.textContent = "🎤 Listening...";
+            askBtn.disabled = true;
+            
+            // Start timeout - cancelled if speech is recognized
+            silenceTimer = setTimeout(function() {
+                recognition.stop();
+                status.textContent = "Couldn't hear you — tap 'Type instead'";
+                askBtn.textContent = "🎤 Tap to Ask";
+                askBtn.disabled = false;
+            }, 8000);
+        };
+
+        recognition.onresult = function(event) {
+            clearTimeout(silenceTimer); // Cancel the timer - speech was recognized!
+            // ... rest of your onresult code
+        };
 
         startCamera();
     </script>
