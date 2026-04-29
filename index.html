@@ -19,9 +19,9 @@
             height: 100%;
             object-fit: cover;
         }
-        
+                
         #ui-overlay {
-            position: absolute;
+            position: fixed;
             bottom: 10px;
             left: 0;
             right: 0;
@@ -79,7 +79,7 @@
 </head>
 <body>
     
-    <div id="version-dot" style="position:fixed; top:5px; right:5px; width:10px; height:10px; background:#ff0000; border-radius:50%; z-index:9999; opacity:0.8;"></div>
+    <div id="version-dot" style="position:fixed; top:30px; right:50px; width:10px; height:10px; background:#ff0000; border-radius:50%; z-index:9999; opacity:0.8;"></div>
     <!-- above is a dot turn it on and off to test changes -->
     
     <div id="camera-container">
@@ -269,6 +269,16 @@ Keep responses under 80 words.`;
         const image = captureFrame();
         askClaude(question, image);
         }
+    });
+    // Prevent keyboard from shifting UI
+    window.addEventListener('focusin', function() {
+        document.getElementById('ui-overlay').style.position = 'fixed';
+        document.getElementById('ui-overlay').style.bottom = '10px';
+    });
+
+    window.addEventListener('focusout', function() {
+        document.getElementById('ui-overlay').style.position = 'absolute';
+        document.getElementById('ui-overlay').style.bottom = '10px';
     });
     startCamera();
 </script>
