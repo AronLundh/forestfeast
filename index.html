@@ -71,7 +71,10 @@
     </style>
 </head>
 <body>
-    <div id="version-dot" style="position:fixed; top:12px; right:12px; width:10px; height:10px; background:#ff0000; border-radius:50%; z-index:9999; opacity:0.8;"></div>
+    
+    <!-- <div id="version-dot" style="position:fixed; top:5px; right:5px; width:10px; height:10px; background:#ff0000; border-radius:50%; z-index:9999; opacity:0.8;"></div> -->
+    <!-- above is a dot turn it on and off to test changes -->
+    
     <div id="camera-container">
         <video id="video" autoplay playsinline></video>
         
@@ -80,7 +83,8 @@
             <div id="response-box">Tap the button and ask about what you see 🌲</div>
             <button id="ask-btn">🎤 Tap to Ask</button>
             <div id="text-fallback" style="width:80%; display:flex; gap:8px; margin-top:4px;">
-                <input id="text-input" type="text" placeholder="Or type your question..." 
+                <input id="text-input" type="text" placeholder="Or type here..." 
+                    inputmode="search"
                     style="flex:1; padding:10px; border-radius:20px; border:none; background:rgba(255,255,255,0.2); color:white; font-size:14px;">
                 <button id="send-btn" style="background:#2d6a2d; color:white; border:none; border-radius:20px; padding:10px 16px; cursor:pointer;">Send</button>
             </div>
