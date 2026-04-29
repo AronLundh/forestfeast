@@ -300,6 +300,28 @@ Keep responses under 80 words.`;
                 askBtn.textContent = "🎤 Tap to Ask";
             };
 
+            recognition.onstart = function() {
+                status.textContent = "🎤 Listening...";
+                askBtn.textContent = "🎤 Listening...";
+                askBtn.disabled = true;
+                
+                silenceTimer = setTimeout(function() {
+                    recognition.stop();
+                    status.textContent = "Couldn't hear you — type below instead";
+                    askBtn.textContent = "🎤 Tap to Ask";
+                    askBtn.disabled = false;
+                }, 8000);
+            };
+
+            recognition.onresult = function(event) {
+                clearTimeout(silenceTimer);
+                const question = event.results[0][0].transcript;
+                status.textContent = "You asked: " + question;
+                askBtn.textContent = "🎤 Tap to Ask";
+                const image = captureFrame();
+                askClaude(question, image);
+            };
+
             recognition.start();
         }
 
@@ -333,26 +355,6 @@ Keep responses under 80 words.`;
                 bottomBar.style.bottom = (window.innerHeight - viewportHeight) + 'px';
             });
         }
-
-        recognition.onstart = function() {
-            status.textContent = "🎤 Listening...";
-            askBtn.textContent = "🎤 Listening...";
-            askBtn.disabled = true;
-            
-            // Start timeout - cancelled if speech is recognized
-            silenceTimer = setTimeout(function() {
-                recognition.stop();
-                status.textContent = "Couldn't hear you — tap 'Type instead'";
-                askBtn.textContent = "🎤 Tap to Ask";
-                askBtn.disabled = false;
-            }, 8000);
-        };
-
-        recognition.onresult = function(event) {
-            clearTimeout(silenceTimer); // Cancel the timer - speech was recognized!
-            // ... rest of your onresult code
-        };
-
         startCamera();
     </script>
 </body>
