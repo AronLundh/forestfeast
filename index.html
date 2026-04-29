@@ -70,135 +70,169 @@
         </div>
     </div>
 
-    <script>
-        let CLAUDE_API_KEY = localStorage.getItem('claude_key');
-        if (!CLAUDE_API_KEY) {
-            CLAUDE_API_KEY = prompt("Enter your Claude API key:");
-            localStorage.setItem('claude_key', CLAUDE_API_KEY);
-            }
-        const video = document.getElementById('video');
-        const status = document.getElementById('status');
-        const responseBox = document.getElementById('response-box');
-        const askBtn = document.getElementById('ask-btn');
+ <script>
+    let CLAUDE_API_KEY = localStorage.getItem('claude_key');
+    if (!CLAUDE_API_KEY) {
+        CLAUDE_API_KEY = prompt("Enter your Claude API key:");
+        localStorage.setItem('claude_key', CLAUDE_API_KEY);
+    }
 
-        async function startCamera() {
-            try {
-                const stream = await navigator.mediaDevices.getUserMedia({ 
-                    video: { facingMode: 'environment' },
-                    audio: false 
-                });
-                video.srcObject = stream;
-                status.textContent = "Point camera at a mushroom or plant";
-            } catch (err) {
-                status.textContent = "Camera error: " + err.message;
-            }
+    const video = document.getElementById('video');
+    const status = document.getElementById('status');
+    const responseBox = document.getElementById('response-box');
+    const askBtn = document.getElementById('ask-btn');
+
+    // Conversation history - this is the memory
+    let conversationHistory = [];
+
+    async function startCamera() {
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ 
+                video: { facingMode: 'environment' },
+                audio: false 
+            });
+            video.srcObject = stream;
+            status.textContent = "Point camera at a mushroom or plant";
+        } catch (err) {
+            status.textContent = "Camera error: " + err.message;
         }
+    }
 
-        function captureFrame() {
-            const canvas = document.createElement('canvas');
-            canvas.width = video.videoWidth;
-            canvas.height = video.videoHeight;
-            canvas.getContext('2d').drawImage(video, 0, 0);
-            return canvas.toDataURL('image/jpeg').split(',')[1];
-        }
+    function captureFrame() {
+        const canvas = document.createElement('canvas');
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        canvas.getContext('2d').drawImage(video, 0, 0);
+        return canvas.toDataURL('image/jpeg').split(',')[1];
+    }
 
-        async function askClaude(question, imageBase64) {
-            status.textContent = "Thinking...";
-            responseBox.textContent = "Analyzing...";
+    async function askClaude(question, imageBase64) {
+        status.textContent = "Thinking...";
+        responseBox.textContent = "Analyzing...";
 
-            const prompt = "You are ForestFeast, a helpful and cautious foraging assistant inspired by Swedish nature traditions and Allemansrätten. A beginner forager is pointing their camera at something in the forest and asking: " + question + ". Analyze the image and answer helpfully. If you can identify a mushroom or plant, say what it likely is, say if it appears edible or not, and give one key identifying feature you can see. If the image is unclear, ask them to move closer or adjust the angle. Keep your response under 100 words. ALWAYS end with: ⚠️ Always verify with an expert before eating anything you find.";
+        const systemPrompt = `You are ForestFeast, a cautious and knowledgeable foraging assistant inspired by Swedish nature traditions and Allemansrätten.
 
-            try {
-                const response = await fetch(
-                    "https://api.anthropic.com/v1/messages",
-                    {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'x-api-key': CLAUDE_API_KEY,
-                            'anthropic-version': '2023-06-01',
-                            'anthropic-dangerous-direct-browser-access': 'true'
-                        },
-                        body: JSON.stringify({
-                            model: "claude-sonnet-4-6",
-                            max_tokens: 300,
-                            messages: [{
-                                role: "user",
-                                content: [
-                                    {
-                                        type: "image",
-                                        source: {
-                                            type: "base64",
-                                            media_type: "image/jpeg",
-                                            data: imageBase64
-                                        }
-                                    },
-                                    {
-                                        type: "text",
-                                        text: prompt
-                                    }
-                                ]
-                            }]
-                        })
+You help beginners safely identify mushrooms, berries, and plants in the forest.
+
+GROUNDING RULES - follow these strictly:
+- If the image is dark, blurry, or too far away: say "I can't see clearly — could you move closer or find better light?"
+- If multiple items are visible and it's unclear which one the user means: ask "Do you mean the [item1] or the [item2]?" before answering
+- If you can identify the item but are NOT confident about edibility: say what it looks like and ask "Could you show me the underside/gills so I can be more certain?"
+- If you ARE confident: give a clear answer with one key identifying feature
+- If the user follows up on a previous question, remember the context of what you were just discussing
+
+ALWAYS end every response with: ⚠️ Always verify with an expert before eating anything you find.
+Keep responses under 80 words.`;
+
+        // Add the new user message with image to history
+        const newMessage = {
+            role: "user",
+            content: [
+                {
+                    type: "image",
+                    source: {
+                        type: "base64",
+                        media_type: "image/jpeg",
+                        data: imageBase64
                     }
-                );
+                },
+                {
+                    type: "text",
+                    text: question
+                }
+            ]
+        };
 
-                const data = await response.json();
-                const reply = data.content[0].text;
-                responseBox.textContent = reply;
-                status.textContent = "Point camera at a mushroom or plant";
+        conversationHistory.push(newMessage);
 
-            } catch (err) {
-                responseBox.textContent = "Error: " + err.message;
-                status.textContent = "Something went wrong, try again";
-            }
+        // Keep only last 6 messages to avoid token limits
+        if (conversationHistory.length > 6) {
+            conversationHistory = conversationHistory.slice(-6);
         }
 
-        function startListening() {
-            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        try {
+            const response = await fetch(
+                "https://api.anthropic.com/v1/messages",
+                {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'x-api-key': CLAUDE_API_KEY,
+                        'anthropic-version': '2023-06-01',
+                        'anthropic-dangerous-direct-browser-access': 'true'
+                    },
+                    body: JSON.stringify({
+                        model: "claude-sonnet-4-6",
+                        max_tokens: 300,
+                        system: systemPrompt,
+                        messages: conversationHistory
+                    })
+                }
+            );
+
+            const data = await response.json();
+            const reply = data.content[0].text;
             
-            if (!SpeechRecognition) {
-                status.textContent = "Voice not supported, analyzing image...";
-                const image = captureFrame();
-                askClaude("Is this safe to eat? What is it?", image);
-                return;
-            }
+            // Add Claude's response to history
+            conversationHistory.push({
+                role: "assistant",
+                content: reply
+            });
 
-            const recognition = new SpeechRecognition();
-            recognition.lang = 'en-US';
-            recognition.interimResults = false;
+            responseBox.textContent = reply;
+            status.textContent = "Point camera at a mushroom or plant";
 
-            recognition.onstart = function() {
-                status.textContent = "🎤 Listening...";
-                askBtn.textContent = "🎤 Listening...";
-                askBtn.disabled = true;
-            };
+        } catch (err) {
+            responseBox.textContent = "Error: " + err.message;
+            status.textContent = "Something went wrong, try again";
+        }
+    }
 
-            recognition.onresult = function(event) {
-                const question = event.results[0][0].transcript;
-                status.textContent = "You asked: " + question;
-                askBtn.textContent = "🎤 Tap to Ask";
-                askBtn.disabled = false;
-                const image = captureFrame();
-                askClaude(question, image);
-            };
-
-            recognition.onerror = function(event) {
-                status.textContent = "Couldn't hear you - try again";
-                askBtn.textContent = "🎤 Tap to Ask";
-                askBtn.disabled = false;
-            };
-
-            recognition.onend = function() {
-                askBtn.textContent = "🎤 Tap to Ask";
-                askBtn.disabled = false;
-            };
-
-            recognition.start();
+    function startListening() {
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        
+        if (!SpeechRecognition) {
+            status.textContent = "Voice not supported, analyzing image...";
+            const image = captureFrame();
+            askClaude("Is this safe to eat? What is it?", image);
+            return;
         }
 
-        askBtn.addEventListener('click', startListening);
-        startCamera();
-    </script>
+        const recognition = new SpeechRecognition();
+        recognition.lang = 'en-US';
+        recognition.interimResults = false;
+
+        recognition.onstart = function() {
+            status.textContent = "🎤 Listening...";
+            askBtn.textContent = "🎤 Listening...";
+            askBtn.disabled = true;
+        };
+
+        recognition.onresult = function(event) {
+            const question = event.results[0][0].transcript;
+            status.textContent = "You asked: " + question;
+            askBtn.textContent = "🎤 Tap to Ask";
+            askBtn.disabled = false;
+            const image = captureFrame();
+            askClaude(question, image);
+        };
+
+        recognition.onerror = function(event) {
+            status.textContent = "Couldn't hear you - try again";
+            askBtn.textContent = "🎤 Tap to Ask";
+            askBtn.disabled = false;
+        };
+
+        recognition.onend = function() {
+            askBtn.textContent = "🎤 Tap to Ask";
+            askBtn.disabled = false;
+        };
+
+        recognition.start();
+    }
+
+    askBtn.addEventListener('click', startListening);
+    startCamera();
+</script>
 </body>
 </html>
