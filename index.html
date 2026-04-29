@@ -135,7 +135,7 @@
     </div>
 
     <div id="ui-overlay">
-        <!-- <div id="status">...</div> -->
+        <div id="status">...</div>
         <div id="response-box">Point with the camera, press the button and ask about what you see 🌲</div>
         <button id="ask-btn">🎤 Tap to Ask</button>
     </div>
@@ -278,34 +278,10 @@ Keep responses under 80 words.`;
             recognition.onstart = function() {
                 askBtn.textContent = "🎤 Listening...";
                 askBtn.disabled = true;
-            };
-
-            recognition.onresult = function(event) {
-                const question = event.results[0][0].transcript;
-                status.textContent = "You asked: " + question;
-                askBtn.textContent = "🎤 Tap to Ask";
-                const image = captureFrame();
-                askClaude(question, image);
-            };
-
-            recognition.onerror = function(event) {
-                responseBox.textContent = "Couldn't hear you — type below instead";
-                askBtn.textContent = "🎤 Tap to Ask";
-                askBtn.disabled = false;
-            };
-
-            recognition.onend = function() {
-                askBtn.textContent = "🎤 Tap to Ask";
-            };
-
-            recognition.onstart = function() {
-                // status.textContent = "🎤 Listening...";
-                askBtn.textContent = "🎤 Listening...";
-                askBtn.disabled = true;
                 
                 silenceTimer = setTimeout(function() {
                     recognition.stop();
-                    responseBox.textContent = "Couldn't hear you — type below instead";
+                    responseBox.textContent = "Couldn't hear you — type below instead 👇";
                     askBtn.textContent = "🎤 Tap to Ask";
                     askBtn.disabled = false;
                 }, 8000);
@@ -314,10 +290,20 @@ Keep responses under 80 words.`;
             recognition.onresult = function(event) {
                 clearTimeout(silenceTimer);
                 const question = event.results[0][0].transcript;
-                status.textContent = "You asked: " + question;
                 askBtn.textContent = "🎤 Tap to Ask";
                 const image = captureFrame();
                 askClaude(question, image);
+            };
+
+            recognition.onerror = function(event) {
+                clearTimeout(silenceTimer);
+                responseBox.textContent = "Couldn't hear you — type below instead 👇";
+                askBtn.textContent = "🎤 Tap to Ask";
+                askBtn.disabled = false;
+            };
+
+            recognition.onend = function() {
+                askBtn.textContent = "🎤 Tap to Ask";
             };
 
             recognition.start();
