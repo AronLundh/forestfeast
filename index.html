@@ -285,7 +285,7 @@ Keep responses under 80 words.`;
                     responseBox.textContent = "Couldn't hear you — type below instead 👇";
                     askBtn.textContent = "🎤 Tap to Ask";
                     askBtn.disabled = false;
-                }, 8000);
+                }, 3000);
             };
 
             recognition.onresult = function(event) {
@@ -305,7 +305,9 @@ Keep responses under 80 words.`;
             };
 
             recognition.onend = function() {
-                askBtn.textContent = "🎤 Tap to Ask";
+                if (askBtn.disabled == false) {
+                    askBtn.textContent = "🎤 Tap to Ask";
+                } 
             };
 
             recognition.start();
